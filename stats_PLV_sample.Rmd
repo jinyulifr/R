@@ -1,0 +1,48 @@
+---
+title: "DAF effect on PLV"
+output: html_document
+date: '2022-10-20'
+---
+
+```{r}
+library(lme4)
+library(lmerTest)
+library(MASS)
+```
+
+```{r}
+rm(list=ls())
+```
+
+```{r}
+# import the data and organize the dataframe
+mydata<-read.csv("/Volumes/Jinyu LI/exp4/CSV/PLV_00011_wenLens0_mnSent2_MFCCs.csv", header=TRUE)
+summary(mydata)
+mydata<-subset(mydata,pert!="baseline")
+
+mydata$sentID=as.factor(1*(mydata$sentLab==1)+2*(mydata$sentLab==3)+3*(mydata$sentLab==2))
+myContr=contr.sum(3)
+colnames(myContr) <- c(":1", ":3")
+mydata$sentID<-C(mydata$sentID,myContr)
+
+mydata$spID=as.factor(mydata$speaker)
+mydata$DAF=as.factor(mydata$DAF)
+mydata$sentID=as.factor(mydata$sentLab)
+```
+
+```{r}
+#fit the models
+md = lmer(PLV ~ DAF*sentID*Position
+          +(1|spID:DAF)+(1|spID:sentID)+(1|spID:Position),data=mydata)
+          # control=lmerControl(optimizer="bobyqa", optCtrl=list(maxfun=2e7)))
+summary(md)
+
+md2 = lmer(PLV ~ (DAF+sentID+Position)^2
+          +(1|spID:DAF)+(1|spID:sentID)+(1|spID:Position),data=mydata)
+          # control=lmerControl(optimizer="bobyqa", optCtrl=list(maxfun=2e7)))
+summary(md2)
+
+anova(md,md2) #to check if the three-way interaction is significant
+
+```
+
